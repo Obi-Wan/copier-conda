@@ -10,6 +10,7 @@ _jinja_extensions:
 - extensions.py:CurrentYearExtension
 - extensions.py:GitExtension
 - extensions.py:SlugifyExtension
+- extensions.py:LowestVersionExtension
 _skip_if_exists:
 - CHANGELOG.md
 - docs/insiders/changelog.md
@@ -26,17 +27,14 @@ project_description:
 author_fullname:
   type: str
   help: Your full name
-  default: "{{ 'Timothée Mazzucotelli' | git_user_name }}"
 
 author_email:
   type: str
   help: Your email
-  default: "{{ 'dev@pawamoy.fr' | git_user_email }}"
 
 author_username:
   type: str
   help: Your username (e.g. on GitHub)
-  default: pawamoy
 
 repository_provider:
   type: str
@@ -44,6 +42,15 @@ repository_provider:
   default: github.com
   choices:
   - github.com
+  when: false
+
+main_branch_name:
+  type: str
+  help: The main branch name
+  default: main
+  choices:
+  - main
+  - master
 
 repository_namespace:
   type: str
@@ -54,6 +61,21 @@ repository_name:
   type: str
   help: Your repository name
   default: "{{ project_name | slugify }}"
+
+python_versions:
+  type: str
+  help: The list of supported Python versions
+  default: 3.10 3.11 3.12
+
+lowest_python_version:
+  type: str
+  default: "{{ python_versions|lowest_version }}"
+  when: false
+
+conda_channel:
+  type: str
+  help: Conda channel of the package (if any)
+  default: conda-forge
 
 copyright_holder:
   type: str
@@ -73,7 +95,7 @@ copyright_date:
 copyright_license:
   type: str
   help: Your project's license
-  default: ISC License
+  default: MIT License
   choices:
   - Academic Free License v3.0
   - Apache License 2.0
@@ -128,6 +150,7 @@ insiders:
   type: bool
   help: Does this project have an Insiders version?
   default: false
+  when: false
 
 insiders_repository_name:
   type: str

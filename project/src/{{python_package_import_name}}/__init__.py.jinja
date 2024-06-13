@@ -5,4 +5,10 @@
 
 from __future__ import annotations
 
+from {{python_package_import_name}}.debug import get_version
+
+__author__ = """{{ copyright_holder }}"""
+__email__ = "{{ copyright_holder_email }}"
+__version__ = get_version()
+
 __all__: list[str] = []

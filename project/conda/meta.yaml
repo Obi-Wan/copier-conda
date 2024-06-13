@@ -1,0 +1,39 @@
+
+{%- set pyproject = load_file_data('pyproject.toml') %}
+{%- set project = pyproject.get('project', {}) %}
+
+package:
+    name: {{ project.get('name') }}
+    version: {{ project.get('version') }}
+
+source:
+    path: ../
+
+build:
+    # Remove comment from line here below, if your package is pure Python
+    # noarch: python
+    number: '0'
+    script: "{{ PYTHON }} -m pip install --no-deps --ignore-installed . -vv || exit 1"
+
+requirements:
+    build:
+        - python
+        - setuptools
+
+    run:
+        - python
+        # Dependencies as defined in pyproject.toml
+        # Some names might be different from pypi, so please curate this list manually
+
+about:
+    home: {{ project['urls']['Homepage'] }}
+    license_file: LICENSE
+    summary: {{ project.get('description') }}
+    doc_url: {{ project['urls']['Documentation'] }}
+
+extra:
+    maintainers:
+        {% for author in project.get('authors') %}
+        - "{{ author.name }} <{{ author.email }}>"
+        {% endfor %}
+

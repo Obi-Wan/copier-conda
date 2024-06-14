@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """Management commands."""
 
-import os
+import re
 import shutil
 import subprocess
 import sys
 from pathlib import Path
+
+import yaml
 
 try:
     # TODO: Remove once support for Python 3.10 is dropped.
@@ -19,33 +21,83 @@ except ImportError:
 
 def shell(cmd: str) -> None:
     """Run a shell command."""
+    print(f"Calling: `{cmd}`")
     subprocess.run(cmd, shell=True, check=True)  # noqa: S602
 
 
-def conda_install() -> None:
-    """Install dependencies using conda."""
+def is_pkg_installed(pkg: str) -> bool:
+    """Checks whether a conda package is installed.
+
+    Parameters
+    ----------
+    pkg : str
+        Package name
+
+    Returns
+    -------
+    bool
+        Whether it is installed.
+    """
+    print(f"  * Checking that {pkg} is present..", flush=False, end="")
+    pkg = pkg.split("==")[0]
+    pkg = pkg.split("<=")[0]
+    pkg = pkg.split(">=")[0]
+    pkg = pkg.split("<")[0]
+    pkg = pkg.split(">")[0]
+    result = subprocess.run(f"conda list --full-name {pkg} -e -c", shell=True, check=True, capture_output=True, text=True)
+    is_present = result.stdout.strip() != ""
+    if is_present:
+        print("\b\b: Found!")
+    else:
+        print("\b\b: Not found!")
+    return is_present
+
+
+def _process_dep(dep: str) -> str:
+    mtch = re.match("(?P<pkg>\w+)\[(?P<option>\w+)\](?P<rest>.*)", dep)
+    if mtch is not None:
+        mtch_dict = mtch.groupdict()
+        dep = f"{mtch_dict['pkg']}-{mtch_dict['option']}{mtch_dict['rest']}"
+    return dep.split(";")[0]
+
+
+def setup_conda() -> None:
+    """Setup the project."""
+    if not shutil.which("conda"):
+        raise ValueError("make: setup: you should be in a conda environment to proceed.")
+
+    print("Preparing environment:")
+    pkgs_to_install = ["build", "twine", "conda-build", "anaconda-client"]
+    pkgs_to_install = [pkg for pkg in pkgs_to_install if not is_pkg_installed(pkg)]
+    if len(pkgs_to_install) > 0:
+        shell("conda install " + " ".join(pkgs_to_install))
+
+    with open("environment.yaml", "r", encoding="utf-8") as fid:
+        env_file = yaml.safe_load(fid.read())
+    deps_channels = env_file["channels"] if "channels" in env_file else []
+    for channel in deps_channels:
+        shell(f"conda config --append channels {channel} --env")
+
+    print("Installing dependencies")  # noqa: T201
+    print("- Run dependencies:")
+    rundeps = [dep for dep in env_file["dependencies"] if not is_pkg_installed(dep)]
+    if len(rundeps) > 0:
+        rundeps = " ".join(f"'{dep}'" for dep in rundeps)
+        shell(f"conda install {rundeps}")
+
+    print("- Dev dependencies:")
     with open("pyproject.toml", "r", encoding="utf-8") as fid:
         pyproject = tomllib.loads(fid.read())
     devdeps = [line.strip() for line in pyproject["project"]["optional-dependencies"]["dev"]]
     devdeps = [line for line in devdeps if line and not line.startswith(("-e", "#")) and line != ""]
+    devdeps = [_process_dep(dep) for dep in devdeps]
+    devdeps = [dep for dep in devdeps if not is_pkg_installed(dep)]
+    # TODO: handle the case where ; imposes constraints and we need to satisfy them
+    if len(devdeps) > 0:
+        devdeps = " ".join(f"'{dep}'" for dep in devdeps)
+        shell(f"conda install {devdeps}")
 
-    shell(f"conda install {pyproject['project']['name']} --use-local --only-deps")
-    if "CI" not in os.environ:
-        shell(f"conda install {' '.join(devdeps)}")
-        shell("pip install --no-deps -e .")
-    else:
-        shell("pip install --no-deps .")
-
-
-def setup() -> None:
-    """Setup the project."""
-    if not shutil.which("conda"):
-        raise ValueError("make: setup: you should be in a conda environment to proceed.")
-    pkgs_to_install = [pkg for pkg in ["build", "twine"] if not shutil.which(pkg)]
-    shell("conda install " + " ".join(pkgs_to_install))
-
-    print("Installing dependencies (default environment)")  # noqa: T201
-    conda_install()
+    shell("pip install --no-deps -e .")
 
 
 def clean() -> None:
@@ -80,7 +132,7 @@ def main() -> int:
         if cmd == "clean":
             clean()
         elif cmd == "setup":
-            setup()
+            setup_conda()
 
     return 0
 

@@ -25,7 +25,6 @@ nav:
 - Development:
   - Contributing: contributing.md
   - Code of Conduct: code_of_conduct.md
-  - Coverage report: coverage.md
 
 theme:
   name: material
@@ -72,7 +71,6 @@ extra_css:
 markdown_extensions:
 - attr_list
 - admonition
-- callouts
 - footnotes
 - pymdownx.emoji:
     emoji_index: !!python/name:material.extensions.emoji.twemoji
@@ -95,10 +93,8 @@ markdown_extensions:
 plugins:
 - search
 - autorefs
-- markdown-exec
 - literate-nav:
     nav_file: SUMMARY.md
-- coverage
 - mkdocstrings:
     handlers:
       python:
@@ -131,8 +127,6 @@ plugins:
 {#- - git-revision-date-localized:
     enable_creation_date: true
     type: timeago #}
-- minify:
-    minify_html: !ENV [DEPLOY, false]
 - group:
     enabled: !ENV [MATERIAL_INSIDERS, false]
     plugins:

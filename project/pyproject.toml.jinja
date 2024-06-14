@@ -92,7 +92,9 @@ classifiers = [
     "Topic :: Utilities",
     "Typing :: Typed",
 ]
-dependencies = ["python>={{ lowest_python_version }}"]
+dependencies = [
+    "python>={{ lowest_python_version }}",
+]
 
 [project.optional-dependencies]
 dev = [
@@ -101,11 +103,10 @@ dev = [
 
     # maintenance
     "build>=1.2",
-    "git-changelog>=2.5",
+    "git-changelog>=2.4",
     "twine>=5.1; python_version < '3.13'",
 
     # ci
-    "duty>=1.4",
     "isort",
     "pyupgrade",
     "pytest>=8.2",
@@ -118,22 +119,14 @@ dev = [
 
     # docs
     "black>=24.4",
-    "markdown-callouts>=0.4",
-    "markdown-exec>=1.8",
     "mkdocs>=1.6",
-    "mkdocs-coverage>=1.0",
-    "mkdocs-gen-files>=0.5",
+    "mkdocs-gen-files>=0.4",
     "mkdocs-git-committers-plugin-2>=2.3",
     "mkdocs-literate-nav>=0.6",
     "mkdocs-material>=9.5",
-    "mkdocs-minify-plugin>=0.8",
     "mkdocstrings[python]>=0.25",
     "tomli>=2.0; python_version < '3.11'",
 ]
-
-[tool.setuptools.dynamic]
-dependencies = {file = ["requirements.txt"]}
-optional-dependencies.dev = {file = ["requirements-dev.txt"]}
 
 [project.urls]
 Homepage = "https://{{ repository_namespace }}.{{ repository_provider.rsplit('.', 1)[0] }}.io/{{ repository_name }}"

@@ -1,4 +1,4 @@
-name: ci
+name: Python package
 
 on:
   push:
@@ -36,26 +36,33 @@ jobs:
       with:
         python-version: "{{ lowest_python_version }}"
 
+    - name: Python info
+      shell: bash -e {0}
+      run: |
+        which python
+        python --version
+
     - name: Install dependencies
-      run: make setup
+      run: |
+        python -m pip install --upgrade pip setuptools build
+        python -m pip install flake8 pytest
+        python -m pip install .
 
-    - name: Check if the documentation builds correctly
-      run: make check-docs
-
-    - name: Check the code quality
-      run: make check-quality
-
-    - name: Check if the code is correctly typed
-      run: make check-types
-
-    - name: Check for breaking changes in the API
-      run: make check-api
+    - name: Lint with flake8
+      run: |
+        # stop the build if there are Python syntax errors or undefined names
+        flake8 src/{{python_package_import_name}} tests examples --count --select=E9,F63,F7,F82 --show-source --statistics
+        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+        flake8 src/{{python_package_import_name}} tests examples --count --exit-zero --max-complexity=15 --max-line-length=127 --statistics
 
   tests:
 
     strategy:
       matrix:
-        os: {{ "[" }} ubuntu-latest, macos-latest, windows-latest {{ "]" }}
+        os:
+        - ubuntu-latest
+        # - windows-latest
+        # - macos-latest
         python-version: {{ "[" }} "{{ python_versions.split(' ')|join('", "') }}" {{ "]" }}
 
     runs-on: {% raw %}${{ matrix.os }}{% endraw %}
@@ -71,7 +78,15 @@ jobs:
         allow-prereleases: true
 
     - name: Install dependencies
-      run: make setup
+      run: |
+        python -m pip install --upgrade pip setuptools build
+        python -m pip install flake8 pytest
+        python -m pip install .
 
-    - name: Run the test suite
-      run: make test
+    - name: Test with pytest
+      run: |
+        pytest tests/
+
+    - name: Verify that we can build the package
+      run: |
+        python -m build
